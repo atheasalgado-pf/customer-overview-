@@ -1,0 +1,48 @@
+# Sensitive Data
+*.json
+*.json.full
+*.txt
+*.html
+.DS_Store
+
+# Except the scripts and config
+!customers.json
+!sheet_ids.json
+!sheet_titles.json
+!amplitude_format.json
+!spreadsheet_format.json
+
+# Actually, it's safer to ignore all JSON by default and only include what is needed.
+# But looking at the file list, most .json files look like data.
+# I will ignore all .json and explicitly allow the logic files if they exist.
+
+# Project files
+!*.py
+!GEMINI.md
+!README.md
+!*.sh
+
+# Explicitly ignore data files found in the directory
+master_data.json
+overview_data.json
+indicators_data.json
+det_data.json
+apr_usage.json
+mar_usage.json
+calendar_interactions.json
+interactions_full.json
+processed_summary.json
+final_processed_summary.json
+yesterday_emails_full.json
+yesterday_emails.json
+update_requests.json
+width_requests.json
+column_widths.json
+row_heights.json
+full_overview.json
+features_full.json
+sheet_ids.json
+sheet_titles.json
+amplitude_format.json
+spreadsheet_format.json
+# Wait, the user might want some of these. I'll stick to a standard "ignore data" approach.
