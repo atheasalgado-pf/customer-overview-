@@ -54,44 +54,57 @@ def main():
         summary = []
         dates = []
         
-        # Gmail search
-        for msg in gmail:
-            snippet = msg.get('snippet', '').lower()
-            subject = ""
-            msg_date = None
+            # Gmail search
+            for msg in gmail:
+                snippet = msg.get('snippet', '').lower()
+                subject = ""
+                msg_date = None
+                from_contact = "Unknown"
+                
+                for h in msg.get('payload', {}).get('headers', []):
+                    if h['name'] == 'Subject': subject = h['value'].lower()
+                    if h['name'] == 'From': from_contact = h['value']
+                    if h['name'] == 'Date':
+                        try:
+                            # Simple date parsing, might need adjustment for complex headers
+                            date_str = " ".join(h['value'].split()[:4])
+                            msg_date = datetime.strptime(date_str, "%a, %d %b %Y")
+                        except:
+                            pass
+                
+                if c.lower() in snippet or c.lower() in subject:
+                    summary.append(f"Email: {msg.get('snippet')[:120]}...")
+                    if msg_date:
+                        dates.append((msg_date, from_contact))
             
-            for h in msg.get('payload', {}).get('headers', []):
-                if h['name'] == 'Subject': subject = h['value'].lower()
-                if h['name'] == 'Date':
-                    try:
-                        # Simple date parsing, might need adjustment for complex headers
-                        date_str = " ".join(h['value'].split()[:4])
-                        msg_date = datetime.strptime(date_str, "%a, %d %b %Y")
-                    except:
-                        pass
-            
-            if c.lower() in snippet or c.lower() in subject:
-                summary.append(f"Email: {msg.get('snippet')[:120]}...")
-                if msg_date:
-                    dates.append(msg_date.strftime("%Y-%m-%d"))
-        
-        # Calendar search
-        for event in cal:
-            title = event.get('summary', '').lower()
-            desc = event.get('description', '').lower()
-            if c.lower() in title or (desc and c.lower() in desc):
-                start_raw = event.get('start', {}).get('dateTime', event.get('start', {}).get('date', ''))
-                if start_raw:
-                    start_date = start_raw[:10]
-                    summary.append(f"Meeting: {event.get('summary')} ({start_date})")
-                    dates.append(start_date)
+            # Calendar search
+            for event in cal:
+                title = event.get('summary', '').lower()
+                desc = event.get('description', '').lower()
+                if c.lower() in title or (desc and c.lower() in desc):
+                    start_raw = event.get('start', {}).get('dateTime', event.get('start', {}).get('date', ''))
+                    if start_raw:
+                        start_date_str = start_raw[:10]
+                        start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
+                        
+                        # Get attendees as contacts
+                        attendees = [a.get('email', 'Attendee') for a in event.get('attendees', []) if not a.get('self')]
+                        contact = attendees[0] if attendees else "Meeting Invite"
+                        
+                        summary.append(f"Meeting: {event.get('summary')} ({start_date_str})")
+                        dates.append((start_date, contact))
 
-        if summary:
-            unique_summary = list(dict.fromkeys(summary))
-            results[c] = {
-                "narrative": "\n".join(unique_summary[:5]),
-                "latest_date": max(dates) if dates else today.strftime("%Y-%m-%d")
-            }
+            if summary:
+                unique_summary = list(dict.fromkeys(summary))
+                # Sort dates to find the absolute latest contact
+                dates.sort(key=lambda x: x[0], reverse=True)
+                latest_date_obj, latest_contact = dates[0]
+                
+                results[c] = {
+                    "narrative": "\n".join(unique_summary[:5]),
+                    "latest_date": latest_date_obj.strftime("%Y-%m-%d"),
+                    "primary_contact": latest_contact
+                }
 
     output_file = 'processed_summary.json'
     with open(output_file, 'w') as f:

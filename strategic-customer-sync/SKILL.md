@@ -1,13 +1,44 @@
+# 🧠 Strategic Customer Sync: Technical Guide
+
+This skill is a modular "Signals Engine" that transforms Salesforce data, product usage metrics, and Google Workspace interactions into rolling strategic dashboards.
+
+## 📁 File Roles & Logic (How it Works)
+
+### 1. The Core Workflow
+- **`daily_sync.py [days]`**: The conductor. It accepts an optional "lookback" argument (default 1 day). It coordinates the fetching of fresh data and triggers the intelligence pipeline.
+- **`setup_environment.py`**: The onboarding wizard. It verifies your CLI authentications and creates your personal `config.json`.
+- **`schedule_me.py`**: The auto-scheduler. It sets a 2:00 AM "alarm" in your system (crontab) to run the sync while you sleep, protecting your daytime API quota.
+
+### 2. Data Extractors
+- **`sync_sfdc_accounts.py`**: Automatically identifies your assigned accounts. It only re-queries Salesforce once every 7 days (Smart Sync) to minimize API usage.
+- **`process_all_interactions.py`**: The narrative detector. It extracts recent email and meeting snippets. 
+    - **Primary Contact Extraction**: It scans headers to identify the *exact person* you last spoke with at the customer, which is then pushed to row 5 of your dashboard.
+- **`extract_indicators.py`**: The metrics engine.
+    - **Engagement Velocity**: It compares current usage against the previous sync. If engagement (Yield) drops by **>20%**, it triggers a `⚠️ Declining` warning.
+
+### 3. Intelligence Layers
+- **`process_jira_tickets.py`**: Uses regex to extract ticket IDs and statuses (e.g., *Blocked*) directly from your inbox.
+- **`analyze_sentiment.py`**: Classifies the tone of interactions as *Positive*, *Neutral*, or *Concerned*.
+- **`sync_shared_intel.py`**: Downloads the team's "Collective Brain" from the Solutions Team shared folder.
+
+### 4. The Executioner
+- **`update_broad_strategy.py`**: The final script that writes to Google Sheets.
+    - **Technical Pulse (C3)**: Automatically downgrades accounts to "Needs Review" if sentiment is poor, engagement is declining, or Jira blockers exist.
+    - **Smart Projects (Row 5)**: Automatically detects and lists active technical projects (e.g., *PostMessage*, *API Migration*) based on keyword detection.
+
+## 🌐 Shared Intelligence (Collaborative Rules)
+
+Any JSON file placed in the **Solutions Team Shared Folder** (`170rqQMfovdREHydGYnj6ZTwNtQhgbdQW`) is automatically merged into everyone's sync.
+
+- **Shared Pulse Rules**: Define new "Red Flags" for the whole team.
+- **Shared Recommendations**: Share a technical solution once, and everyone's AI will suggest it when a similar customer pattern is detected.
+
+## 🛡️ Quota Optimization
+This system is strictly incremental. It fetches dozens of recent items instead of thousands, and gates heavy "Product Data" refreshes to a monthly cadence.
+
 ---
-name: strategic-customer-sync
-description: Synchronizes customer data from Salesforce, analyzes usage and interactions, and updates the Strategic Customer Framework dashboard with rolling intelligence.
----
 
-# Strategic Customer Sync
-
-This skill automates the maintenance of Strategic Customer Overview dashboards. It pulls account assignments from Salesforce, crawls recent interactions (Gmail/Calendar), extracts usage metrics, and rolls everything up into a centralized dashboard.
-
-## 🚀 Replicability & Setup
+## 🚀 Setup & Usage Guide
 
 To use this skill across the team, follow these steps:
 
@@ -22,41 +53,17 @@ Clone the repository and run the setup script:
 # Install Python dependencies
 pip install -r strategic-customer-sync/requirements.txt
 
-# Run the setup wizard to check dependencies and configure Spreadsheet IDs
+# Run the setup wizard
 python3 strategic-customer-sync/scripts/setup_environment.py
 ```
 
-### 3. Configuration
-All IDs and customer name mappings are stored in `strategic-customer-sync/scripts/config.json`. If a customer name in Salesforce doesn't match the Tab name in Google Sheets, add it to the `customer_mapping` section.
-
-## 🔄 Standard Workflow
-
-### Option A: Incremental Sync (Recommended)
-This command automates the entire pipeline. You can specify the number of days to look back (default is 1).
+### 3. Workflow
+To sync your dashboard manually:
 ```bash
-# Sync activity from the last 24 hours
-python3 strategic-customer-sync/scripts/daily_sync.py
-
-# Sync activity from the last 3 days
-python3 strategic-customer-sync/scripts/daily_sync.py 3
+python3 strategic-customer-sync/scripts/daily_sync.py [optional_days_lookback]
 ```
 
-### Option B: Granular Manual Steps
-Run these in order if you need to perform a deep-crawl or troubleshooting:
-...
-## 🛡️ Quota Optimization & Efficiency
-
-This skill is designed to minimize API consumption and respect Google Workspace quotas:
-
-- **Incremental Fetching**: The `daily_sync.py` script uses narrow `after:` filters for Gmail and `timeMin` for Calendar. Instead of crawling thousands of emails, it only fetches the dozens from the last 24-48 hours.
-- **Rollup Logic**: The script only updates the individual customer tabs that have *new* activity. The "Command Center" dashboard is rebuilt only once at the end of the process.
-- **Gated Usage Sync**: Product usage metrics (`det_data.json`) are massive. The skill is configured to only update these **Monthly** unless a manual refresh is triggered, saving significant Sheets API write quota.
-- **Selective Crawling**: It only searches for accounts assigned to you in Salesforce, ignoring the rest of the company's data.
-
-## 📋 Enforced Output Schema
-- **Technical Pulse (C3)**: Healthy / Needs Review / Stale.
-- **Pulse Reasoning (D3)**: 1 Strategic sentence + Max 3 bullets of recent activity.
-- **Jira Tickets (G3)**: Only references existing tickets + status from [JIRA] emails.
-
-## Reference
-See [UPDATE_STANDARD.md](../UPDATE_STANDARD.md) for logic definitions and field maps.
+To schedule the sync for 2:00 AM (Recommended):
+```bash
+python3 strategic-customer-sync/scripts/schedule_me.py
+```

@@ -35,6 +35,16 @@ def main():
     with open(customers_file, 'r') as f:
         target_customers = json.load(f)
 
+    # NEW: Load previous data for delta comparison
+    previous_data_file = 'indicators_data.json'
+    previous_results = {}
+    if os.path.exists(previous_data_file):
+        try:
+            with open(previous_data_file, 'r') as f:
+                previous_results = json.load(f)
+        except:
+            pass
+
     # Headers are in row 4 (index 3), data usually starts around row 7 (index 6)
     results = {}
     for row in det_data:
@@ -57,6 +67,19 @@ def main():
                 }
                 data["Engaged_Total"] = data["Engaged_New"] + data["Engaged_Old"]
                 data["Yield"] = (data["Engaged_Total"] / data["Visitors"] * 100) if data["Visitors"] > 0 else 0
+                
+                # NEW: Calculate Trends
+                prev = previous_results.get(name)
+                data["Trend"] = "Stable"
+                if prev:
+                    prev_yield = prev.get("Yield", 0)
+                    if prev_yield > 0:
+                        yield_change = (data["Yield"] - prev_yield) / prev_yield
+                        if yield_change < -0.20:
+                            data["Trend"] = "Declining"
+                        elif yield_change > 0.20:
+                            data["Trend"] = "Growing"
+                
                 results[name] = data
             except (ValueError, IndexError):
                 continue

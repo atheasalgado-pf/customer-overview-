@@ -3,6 +3,7 @@ import os
 import sys
 from datetime import datetime, timedelta
 import json
+import time
 
 def get_date_range(days):
     today = datetime.now()
@@ -22,6 +23,25 @@ def run_command(cmd, shell=False):
         print(f"Error executing command: {e}")
         return False
 
+def smart_sfdc_sync():
+    """Refreshes Salesforce accounts only if needed (missing or > 7 days old)."""
+    customers_file = 'customers.json'
+    needs_sync = False
+    
+    if not os.path.exists(customers_file):
+        print("Customers list missing. Triggering initial Salesforce sync...")
+        needs_sync = True
+    else:
+        # Check file age
+        file_age_days = (time.time() - os.path.getmtime(customers_file)) / (24 * 3600)
+        if file_age_days > 7:
+            print(f"Customer list is {int(file_age_days)} days old. Refreshing from Salesforce...")
+            needs_sync = True
+    
+    if needs_sync:
+        return run_command(["python3", "strategic-customer-sync/scripts/sync_sfdc_accounts.py"])
+    return True
+
 def main():
     # 0. Handle Arguments
     lookback_days = 1
@@ -33,9 +53,13 @@ def main():
 
     print(f"--- Strategic Customer Sync: {lookback_days}-Day Incremental Update ---")
     
+    # 1a. Smart Salesforce Sync (Quota Optimized)
+    if not smart_sfdc_sync():
+        print("Warning: Salesforce sync failed. Using existing customer list if available.")
+
     gmail_after, cal_min = get_date_range(lookback_days)
     
-    # 1. Fetch Fresh Data (Incremental)
+    # 1b. Fetch Fresh Data (Incremental)
     # Use an extra day for Gmail safety to capture overnight threads
     gmail_buffer_date = (datetime.now() - timedelta(days=lookback_days + 1)).strftime("%Y/%m/%d")
     

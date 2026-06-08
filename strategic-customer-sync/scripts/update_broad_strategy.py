@@ -114,23 +114,32 @@ for tc in target_customers:
     ts = next((v for k, v in tech_stack.items() if tc.lower() in k.lower()), {})
     narrative = narratives.get(tc, {}).get("narrative", "No recent activity recorded.")
     latest_comm = narratives.get(tc, {}).get("latest_date", today_str)
+    primary_contact = narratives.get(tc, {}).get("primary_contact", "Team Lead")
     
     # NEW: Jira and Sentiment
-    jira_tickets_list = jira_data.get(tc, [])
-    jira_tickets = ", ".join(jira_tickets_list)
+    jira_tickets_list = jira_data.get(tc, []),
+    jira_tickets = ", ".join(jira_tickets_list[0]) if isinstance(jira_tickets_list[0], list) else ""
     sentiment = sentiment_data.get(tc, "Neutral")
 
     # Strategic Pulse Logic Enhancement
     current_pulse = "Healthy"
+    trend = data.get("Trend", "Stable")
+    
     if data.get("Yield", 0) < 5: current_pulse = "Needs Review"
+    if trend == "Declining": current_pulse = "Needs Review"
     if sentiment == "Concerned": current_pulse = "Needs Review"
-    if any("Blocked" in t or "High" in t for t in jira_tickets_list): current_pulse = "Needs Review"
+    if any("Blocked" in t or "High" in t for t in jira_tickets_list[0] if isinstance(jira_tickets_list[0], list)): current_pulse = "Needs Review"
     
     # NEW: Apply Shared Pulse Rules
     for rule in shared_intel.get("technical_pulse_rules", []):
         condition = rule.get("condition", "").lower()
         if condition in narrative.lower() or condition in jira_tickets.lower():
             current_pulse = rule.get("pulse", current_pulse)
+
+    # NEW: Project Detection Logic
+    project_keywords = ["PostMessage", "Webhook", "API Migration", "PFRI", "ChatFactory", "Guide", "Concierge", "Account Insights", "Templated Experiences"]
+    detected_projects = [p for p in project_keywords if p.lower() in narrative.lower() or p.lower() in jira_tickets.lower()]
+    project_str = ", ".join(detected_projects) if detected_projects else "General Optimization"
 
     # Strategic Recommendations Logic
     recs = []
@@ -158,7 +167,7 @@ for tc in target_customers:
 
     print(f"Updating tab for {tc} ({sheet_name})...")
     
-    # Update Basic Info (C1, B3, C3, D3:E3, G3, H3)
+    # Update Basic Info (C1, B3, C3, D3:E3, F3, G3, H3)
     # C1: Last Updated Date
     run_gws_command(["sheets", "spreadsheets", "values", "update", "--params", json.dumps({"spreadsheetId": spreadsheet_id, "range": f"'{sheet_name}'!C1", "valueInputOption": "USER_ENTERED"})], {"values": [[today_str]]})
     
@@ -169,15 +178,26 @@ for tc in target_customers:
     run_gws_command(["sheets", "spreadsheets", "values", "update", "--params", json.dumps({"spreadsheetId": spreadsheet_id, "range": f"'{sheet_name}'!C3", "valueInputOption": "USER_ENTERED"})], {"values": [[current_pulse]]})
 
     # D3:E3: Narrative and Last Communication
-    final_narrative = f"[Sentiment: {sentiment}] {narrative}"
+    final_narrative = f"[Sentiment: {sentiment}] "
+    if trend == "Declining":
+        final_narrative += "⚠️ WARNING: Declining Engagement detected. "
+    final_narrative += narrative
     run_gws_command(["sheets", "spreadsheets", "values", "update", "--params", json.dumps({"spreadsheetId": spreadsheet_id, "range": f"'{sheet_name}'!D3:E3", "valueInputOption": "USER_ENTERED"})], {"values": [[final_narrative, latest_comm]]})
     
+    # F3: Active Project(s)
+    run_gws_command(["sheets", "spreadsheets", "values", "update", "--params", json.dumps({"spreadsheetId": spreadsheet_id, "range": f"'{sheet_name}'!F3", "valueInputOption": "USER_ENTERED"})], {"values": [[project_str]]})
+
     # G3: Jira Tickets
     run_gws_command(["sheets", "spreadsheets", "values", "update", "--params", json.dumps({"spreadsheetId": spreadsheet_id, "range": f"'{sheet_name}'!G3", "valueInputOption": "USER_ENTERED"})], {"values": [[jira_tickets]]})
 
     # H3: Recommendations
     final_h3 = f"STRATEGIC RECOMMENDATIONS (Aligned to Use Case Matrix):\n{steps_str}"
     run_gws_command(["sheets", "spreadsheets", "values", "update", "--params", json.dumps({"spreadsheetId": spreadsheet_id, "range": f"'{sheet_name}'!H3", "valueInputOption": "USER_ENTERED"})], {"values": [[final_h3]]})
+
+    # NEW: Update Project Tracking (Row 5+)
+    # B5: Project Name, C5: Primary Contact, D5: Technical Status, E5: Latest Activity
+    project_row = [project_str, primary_contact, "In Progress", narrative[:100] + "..."]
+    run_gws_command(["sheets", "spreadsheets", "values", "update", "--params", json.dumps({"spreadsheetId": spreadsheet_id, "range": f"'{sheet_name}'!B5:E5", "valueInputOption": "USER_ENTERED"})], {"values": [project_row]})
 
     # Collect stats for Dashboard
     pulse_val = run_gws_command(["sheets", "spreadsheets", "values", "get", "--params", json.dumps({"spreadsheetId": spreadsheet_id, "range": f"'{sheet_name}'!C3"})])
