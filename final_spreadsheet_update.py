@@ -11,20 +11,37 @@ env = os.environ.copy()
 env["GOOGLE_WORKSPACE_CLI_KEYRING_BACKEND"] = "file"
 
 mapping = {
-    "Nvidia": "Nvidia Corporation", "Palo Alto Networks": "Palo Alto Networks",
-    "Micron": "Micron Technology, Inc.", "Sysdig": "Sysdig",
-    "Cornerstone": "Cornerstone On Demand", "Exabeam": "Exabeam",
-    "Modern Health": "Modern Health", "Kinaxis": "Kinaxis",
-    "Cotiviti": "Cotiviti", "Endeavor Business Media": "Endeavor Business Media (EBM)",
-    "NinjaOne": "NinjaOne", "Planet": "Planet",
-    "KPMG": "KPMG LLP (Canada)", "Semtech": "Semtech",
-    "Thales": "Thales", "TransUnion": "TransUnion",
-    "PWC": "PWC", "Amplitude": "Amplitude", "Appgate": "Appgate"
+    "Nvidia": "Nvidia Corporation", 
+    "Palo Alto Networks": "Palo Alto Networks",
+    "Micron": "Micron Technology, Inc.", 
+    "Sysdig": "Sysdig",
+    "Cornerstone": "Cornerstone On Demand", 
+    "Exabeam": "Exabeam",
+    "Modern Health": "Modern Health", 
+    "Kinaxis": "Kinaxis",
+    "Cotiviti": "Cotiviti", 
+    "Endeavor Business Media": "Endeavor Business Media (EBM)",
+    "NinjaOne": "NinjaOne", 
+    "Planet": "Planet",
+    "KPMG": "KPMG LLP (Canada)", 
+    "Semtech": "Semtech",
+    "Thales": "Thales", 
+    "TransUnion": "TransUnion",
+    "PWC": "PWC", 
+    "Amplitude": "Amplitude", 
+    "Appgate": "Appgate",
+    "Appgate CyberSecurity Inc": "Appgate",
+    "Scaled Agile": "ScaledAgile",
+    "Thales Group": "Thales",
+    "Cornerstone OnDemand Inc": "Cornerstone On Demand",
+    "Micron Technology, Inc.": "Micron Technology, Inc.",
+    "KPMG LLP (Canada)": "KPMG LLP (Canada)",
+    "Nvidia Corporation": "Nvidia Corporation"
 }
 
 for tc, data in summaries.items():
     sheet_name = mapping.get(tc, tc)
-    print(f"Updating {sheet_name} with interactions from May 27-28...")
+    print(f"Updating {sheet_name} with interactions from June 1-5...")
     
     new_interactions = data["narrative"]
     latest_comm = data["latest_date"]
@@ -40,11 +57,11 @@ for tc, data in summaries.items():
         current_reasoning = ""
 
     # Check if these interactions are already in the reasoning to avoid duplication
-    if "Meeting:" not in current_reasoning and "Email:" not in current_reasoning:
+    if "Meeting:" not in current_reasoning and "Email:" not in current_reasoning and "Task:" not in current_reasoning:
         updated_reasoning = f"{new_interactions}\n\n{current_reasoning}".strip()
     else:
         # Just update with fresh data at the top if it's new
-        updated_reasoning = f"LATEST ACTIVITY (May 27-28):\n{new_interactions}\n\n{current_reasoning}".strip()
+        updated_reasoning = f"LATEST ACTIVITY (June 1-5):\n{new_interactions}\n\n{current_reasoning}".strip()
 
     # 2. Perform Batch Update for C1, B3, D3, E3
     # C1: Last Updated Date
@@ -55,7 +72,7 @@ for tc, data in summaries.items():
     subprocess.run([
         gws_path, "sheets", "spreadsheets", "values", "update",
         "--params", json.dumps({"spreadsheetId": spreadsheet_id, "range": f"'{sheet_name}'!C1", "valueInputOption": "USER_ENTERED"}),
-        "--json", json.dumps({"values": [["5/28/2026"]]})
+        "--json", json.dumps({"values": [["6/5/2026"]]})
     ], env=env, capture_output=True)
 
     subprocess.run([

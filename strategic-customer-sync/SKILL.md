@@ -1,49 +1,58 @@
 ---
 name: strategic-customer-sync
-description: Synchronizes customer data from Salesforce, analyzes usage and interactions, and updates the Strategic Customer Framework dashboard. Use when a Solutions Architect needs to refresh their account recommendations and health narratives based on SFDC, Gmail, and product data.
+description: Synchronizes customer data from Salesforce, analyzes usage and interactions, and updates the Strategic Customer Framework dashboard with rolling intelligence.
 ---
 
 # Strategic Customer Sync
 
-This skill automates the workflow for Solutions Architects to maintain their Strategic Customer Overview dashboards.
+This skill automates the maintenance of Strategic Customer Overview dashboards. It pulls account assignments from Salesforce, crawls recent interactions (Gmail/Calendar), extracts usage metrics, and rolls everything up into a centralized dashboard.
 
-## Workflow
+## 🚀 Replicability & Setup
 
-1. **Sync Salesforce Accounts**: Detects the current user and pulls all assigned accounts where they are the Solutions Architect.
-2. **Analyze Interaction Activity**: Scans Gmail and Calendar to generate narratives of recent customer touchpoints.
-3. **Extract Usage Indicators**: Calculates key health metrics (Yield, Adoption) from product data.
-4. **Generate Strategic Recommendations**: Maps metrics to the [Use Case Matrix](references/use-case-matrix.md) and pushes updates to Google Sheets.
+To use this skill across the team, follow these steps:
 
-## Prerequisite Data
-This skill requires the following files to be present in the workspace:
-- `det_data.json`: Monthly product usage export.
-- `interactions_full.json`: Recent Gmail/Calendar interaction dump.
+### 1. Prerequisites
+- **Python 3.8+**
+- **Salesforce CLI (`sf`)**: Authenticated to your org (`sf org login web`).
+- **Google Workspace CLI (`gws`)**: Authenticated (`gws auth login`).
 
-## Commands & Scripts
-
-### 1. Sync from SFDC
-Run the sync script to generate `customers.json`.
+### 2. Environment Setup
+Clone the repository and run the setup script:
 ```bash
-python3 scripts/sync_sfdc_accounts.py
+# Install Python dependencies
+pip install -r strategic-customer-sync/requirements.txt
+
+# Run the setup wizard to check dependencies and configure Spreadsheet IDs
+python3 strategic-customer-sync/scripts/setup_environment.py
 ```
 
-### 2. Process Interactions
-Generate health narratives based on the synced customer list.
+### 3. Configuration
+All IDs and customer name mappings are stored in `strategic-customer-sync/scripts/config.json`. If a customer name in Salesforce doesn't match the Tab name in Google Sheets, add it to the `customer_mapping` section.
+
+## 🔄 Standard Workflow
+
+### Option A: The "One-Click" Daily Sync (Recommended)
+This command automates the entire pipeline for "Yesterday's" activity. It's the most quota-efficient way to stay up to date.
 ```bash
-python3 scripts/process_all_interactions.py
+python3 strategic-customer-sync/scripts/daily_sync.py
 ```
 
-### 3. Extract Metrics
-Calculate indicators from `det_data.json`.
-```bash
-python3 scripts/extract_indicators.py
-```
+### Option B: Granular Manual Steps
+Run these in order if you need to perform a deep-crawl or troubleshooting:
+...
+## 🛡️ Quota Optimization & Efficiency
 
-### 4. Update Spreadsheet
-Push all data to the target spreadsheet.
-```bash
-python3 scripts/update_broad_strategy_v3.py
-```
+This skill is designed to minimize API consumption and respect Google Workspace quotas:
 
-## Strategy Reference
-For details on how "Goals" and "Actions" are derived from data, see [references/use-case-matrix.md](references/use-case-matrix.md).
+- **Incremental Fetching**: The `daily_sync.py` script uses narrow `after:` filters for Gmail and `timeMin` for Calendar. Instead of crawling thousands of emails, it only fetches the dozens from the last 24-48 hours.
+- **Rollup Logic**: The script only updates the individual customer tabs that have *new* activity. The "Command Center" dashboard is rebuilt only once at the end of the process.
+- **Gated Usage Sync**: Product usage metrics (`det_data.json`) are massive. The skill is configured to only update these **Monthly** unless a manual refresh is triggered, saving significant Sheets API write quota.
+- **Selective Crawling**: It only searches for accounts assigned to you in Salesforce, ignoring the rest of the company's data.
+
+## 📋 Enforced Output Schema
+- **Technical Pulse (C3)**: Healthy / Needs Review / Stale.
+- **Pulse Reasoning (D3)**: 1 Strategic sentence + Max 3 bullets of recent activity.
+- **Jira Tickets (G3)**: Only references existing tickets + status from [JIRA] emails.
+
+## Reference
+See [UPDATE_STANDARD.md](../UPDATE_STANDARD.md) for logic definitions and field maps.

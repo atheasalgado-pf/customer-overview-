@@ -1,0 +1,25 @@
+{
+    "spreadsheet_id": "YOUR_SPREADSHEET_ID_HERE",
+    "matrix_id": "18soPmgZ41c0-d92OnDFliNtyko6-DLRdagNcT-x6b_A",
+    "customer_mapping": {
+        "Nvidia": "Nvidia Corporation",
+        "Palo Alto Networks": "Palo Alto Networks",
+        "Micron": "Micron Technology, Inc.",
+        "Sysdig": "Sysdig",
+        "Cornerstone": "Cornerstone On Demand",
+        "Exabeam": "Exabeam",
+        "Modern Health": "Modern Health",
+        "Kinaxis": "Kinaxis",
+        "Cotiviti": "Cotiviti",
+        "Endeavor Business Media": "Endeavor Business Media (EBM)",
+        "NinjaOne": "NinjaOne",
+        "Planet": "Planet",
+        "KPMG": "KPMG LLP (Canada)",
+        "Semtech": "Semtech",
+        "Thales": "Thales",
+        "TransUnion": "TransUnion",
+        "PWC": "PWC",
+        "Amplitude": "Amplitude",
+        "Appgate": "Appgate"
+    }
+}
