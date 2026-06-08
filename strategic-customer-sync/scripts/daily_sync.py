@@ -4,13 +4,13 @@ import sys
 from datetime import datetime, timedelta
 import json
 
-def get_yesterday_range():
+def get_date_range(days):
     today = datetime.now()
-    yesterday = today - timedelta(days=1)
+    lookback = today - timedelta(days=days)
     # Gmail format: YYYY/MM/DD
-    gmail_after = yesterday.strftime("%Y/%m/%d")
+    gmail_after = lookback.strftime("%Y/%m/%d")
     # Calendar format: RFC3339
-    cal_min = yesterday.strftime("%Y-%m-%dT00:00:00Z")
+    cal_min = lookback.strftime("%Y-%m-%dT00:00:00Z")
     return gmail_after, cal_min
 
 def run_command(cmd, shell=False):
@@ -23,19 +23,27 @@ def run_command(cmd, shell=False):
         return False
 
 def main():
-    print("--- Strategic Customer Sync: Daily Incremental Update ---")
+    # 0. Handle Arguments
+    lookback_days = 1
+    if len(sys.argv) > 1:
+        try:
+            lookback_days = int(sys.argv[1])
+        except ValueError:
+            print(f"Warning: Invalid days '{sys.argv[1]}'. Defaulting to 1 day.")
+
+    print(f"--- Strategic Customer Sync: {lookback_days}-Day Incremental Update ---")
     
-    gmail_after, cal_min = get_yesterday_range()
+    gmail_after, cal_min = get_date_range(lookback_days)
     
     # 1. Fetch Fresh Data (Incremental)
-    # We use a 2-day window for Gmail to ensure we don't miss late-night threads
-    lookback_date = (datetime.now() - timedelta(days=2)).strftime("%Y/%m/%d")
+    # Use an extra day for Gmail safety to capture overnight threads
+    gmail_buffer_date = (datetime.now() - timedelta(days=lookback_days + 1)).strftime("%Y/%m/%d")
     
-    print(f"Step 1: Fetching Gmail and Calendar activity since {lookback_date}...")
+    print(f"Step 1: Fetching Gmail and Calendar activity since {lookback_days} days ago...")
     
     gmail_cmd = [
         "gws", "gmail", "users", "messages", "list", 
-        "--params", json.dumps({"q": f"after:{lookback_date}", "userId": "me"}), 
+        "--params", json.dumps({"q": f"after:{gmail_buffer_date}", "userId": "me"}), 
         "--page-all"
     ]
     
@@ -49,6 +57,10 @@ def main():
     ]
     with open("calendar_interactions.json", "w") as f:
         subprocess.run(cal_cmd, stdout=f, check=True)
+
+    # NEW: Sync Shared Intelligence
+    print("\nStep 1b: Syncing Shared Intelligence from team folder...")
+    run_command(["python3", "strategic-customer-sync/scripts/sync_shared_intel.py"])
 
     # 2. Run Processing Scripts
     print("\nStep 2: Processing intelligence...")

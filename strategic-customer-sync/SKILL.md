@@ -31,10 +31,14 @@ All IDs and customer name mappings are stored in `strategic-customer-sync/script
 
 ## 🔄 Standard Workflow
 
-### Option A: The "One-Click" Daily Sync (Recommended)
-This command automates the entire pipeline for "Yesterday's" activity. It's the most quota-efficient way to stay up to date.
+### Option A: Incremental Sync (Recommended)
+This command automates the entire pipeline. You can specify the number of days to look back (default is 1).
 ```bash
+# Sync activity from the last 24 hours
 python3 strategic-customer-sync/scripts/daily_sync.py
+
+# Sync activity from the last 3 days
+python3 strategic-customer-sync/scripts/daily_sync.py 3
 ```
 
 ### Option B: Granular Manual Steps

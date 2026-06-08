@@ -68,6 +68,13 @@ try:
 except:
     sentiment_data = {}
 
+# NEW: Shared Intelligence
+try:
+    with open('shared_intel_cache.json', 'r') as f:
+        shared_intel = json.load(f)
+except:
+    shared_intel = {"technical_pulse_rules": [], "strategic_recommendations": []}
+
 # Tech Stack Fetch (from a specific features sheet if available)
 tech_stack = {}
 features_raw = run_gws_command(["sheets", "spreadsheets", "values", "get", "--params", json.dumps({"spreadsheetId": matrix_id, "range": "Features!A1:Z500"})])
@@ -119,9 +126,14 @@ for tc in target_customers:
     if sentiment == "Concerned": current_pulse = "Needs Review"
     if any("Blocked" in t or "High" in t for t in jira_tickets_list): current_pulse = "Needs Review"
     
+    # NEW: Apply Shared Pulse Rules
+    for rule in shared_intel.get("technical_pulse_rules", []):
+        condition = rule.get("condition", "").lower()
+        if condition in narrative.lower() or condition in jira_tickets.lower():
+            current_pulse = rule.get("pulse", current_pulse)
+
     # Strategic Recommendations Logic
     recs = []
-    # ... (rest of recommendations logic) ...
     if data.get("Total_New", 0) == 0:
         recs.append({"goal": "Modernize delivery", "action": "Migrate to Templated Experiences", "why": "Drives higher binger sessions."})
     if data.get("CF_Agents", 0) == 0:
@@ -135,6 +147,12 @@ for tc in target_customers:
     if ts.get("Intent") and ts.get("Intent") not in ["N/A", "Unknown"]:
         recs.append({"goal": "Surface ABM signals", "action": "Deploy Account Insights Tab", "why": "Visualizes intent in Salesforce."})
     
+    # NEW: Append Shared Recommendations
+    for shared_rec in shared_intel.get("strategic_recommendations", []):
+        trigger = shared_rec.get("trigger", "").lower()
+        if trigger in narrative.lower() or trigger in jira_tickets.lower():
+            recs.append(shared_rec)
+
     steps_str = "\n\n".join([f"GOAL: {r['goal']}\nACTION: {r['action']}\nWHY: {r['why']}" for r in recs])
     if not steps_str: steps_str = "GOAL: Scale current success.\nACTION: Optimize high-performing experiences."
 

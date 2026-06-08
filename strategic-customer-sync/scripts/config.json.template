@@ -1,5 +1,6 @@
 {
     "spreadsheet_id": "YOUR_SPREADSHEET_ID_HERE",
+    "shared_folder_id": "170rqQMfovdREHydGYnj6ZTwNtQhgbdQW",
     "matrix_id": "18soPmgZ41c0-d92OnDFliNtyko6-DLRdagNcT-x6b_A",
     "customer_mapping": {
         "Nvidia": "Nvidia Corporation",

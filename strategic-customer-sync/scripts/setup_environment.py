@@ -42,6 +42,11 @@ def setup():
             if ss_id:
                 config["spreadsheet_id"] = ss_id
             
+            # Ask for Shared Folder ID
+            default_folder = "170rqQMfovdREHydGYnj6ZTwNtQhgbdQW"
+            folder_id = input(f"Enter the Shared Intelligence Folder ID (Default: {default_folder}): ").strip()
+            config["shared_folder_id"] = folder_id if folder_id else default_folder
+            
             with open(config_file, 'w') as f:
                 json.dump(config, f, indent=4)
             print(f"[OK] Config created.")
